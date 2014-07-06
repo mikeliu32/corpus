@@ -5,3 +5,6 @@ stop
 termset
 testdata
 testdata_short
+news_rawdata
+cocurrenceSet
+relatedCorpusSet

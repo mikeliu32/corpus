@@ -13,7 +13,7 @@
 
 #include "news.h"
 
-#define HASHTABLE_SLOTSIZE 500000
+#define HASHTABLE_SLOTSIZE 3500000
 #define bytesPerMB 1048576
 
 typedef struct nd{
@@ -172,6 +172,7 @@ int main(int argc, char* argv[]){
 	//memset(articleHashTable, 0, sizeof(node*)*2000);
 							free(article_wordlist);
 							free(keywordlist);
+							free(article_buffer);
 							article_wordlist=NULL;
 							keywordlist=NULL;
 
@@ -215,6 +216,7 @@ int main(int argc, char* argv[]){
 	//memset(articleHashTable, 0, sizeof(node*)*2000);
 							free(article_wordlist);
 							free(keywordlist);
+							free(article_buffer);
 							article_wordlist=NULL;
 							keywordlist=NULL;
 

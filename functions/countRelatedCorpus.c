@@ -3,8 +3,9 @@
 #include<locale.h>
 #include<wchar.h>
 #include<string.h>
+#include<math.h>
 
-#define HASHTABLE_SLOTSIZE 500000
+#define HASHTABLE_SLOTSIZE 1000000
 
 typedef struct relatedNd{
 	wchar_t* term;
@@ -30,7 +31,7 @@ node* insert_node(node** nodelist, wchar_t* keyToAdd);
 node* find_node(node** nodelist, wchar_t* keyToFind);
 
 void addToRelatedList(node* keynode, wchar_t* relateTerm);
-void hashtable_countWeightAndSort(node** nodelist, long slotsize);
+void hashtable_countWeightAndSort(node** nodelist, long slotsize, long totalTermCount);
 void hashtable_generateResult(node** nodelist, long slotsize, FILE* wfp_result, FILE* wfp_index);
 int compare (const void * a, const void * b);
 
@@ -43,12 +44,13 @@ int main(int argc, char* argv[]){
 	node ** hashtable;
 	node * tempNode;
 	wchar_t keyTerm[50],relateTerm[50];
-
+	long totalTermCount=0;
+	
 	hashtable = create_hashtable(hashtable, HASHTABLE_SLOTSIZE);
 
 	fp = fopen(argv[argc-1],"r");
-	wfp_result = fopen("relatedCorpus","w");
-	wfp_index = fopen("relatedCorpus.index","w");
+	wfp_result = fopen("relatedCorpus_forDB","w");
+	wfp_index = fopen("relatedCorpus_forDB.index","w");
 
 	while(fwscanf(fp, L"%ls %ls",&keyTerm,&relateTerm)!=EOF){
 	
@@ -76,12 +78,14 @@ int main(int argc, char* argv[]){
 			addToRelatedList(tempNode, keyTerm);
 
 		}
+		
+		totalTermCount+=2;
 	}
 
 	
 	fclose(fp);
 
-	hashtable_countWeightAndSort(hashtable, HASHTABLE_SLOTSIZE);
+	hashtable_countWeightAndSort(hashtable, HASHTABLE_SLOTSIZE, totalTermCount);
 	hashtable_generateResult(hashtable, HASHTABLE_SLOTSIZE, wfp_result, wfp_index);
 	fclose(wfp_result);
 	fclose(wfp_index);
@@ -218,7 +222,7 @@ void addToRelatedList(node* keynode, wchar_t* relateTerm){
 
 }
 
-void hashtable_countWeightAndSort(node** nodelist, long slotsize){
+void hashtable_countWeightAndSort(node** nodelist, long slotsize, long totalTermCount){
 
 	int row,i;
 	node * temp, *rtemp;
@@ -250,8 +254,11 @@ void hashtable_countWeightAndSort(node** nodelist, long slotsize){
 					rTerm_cooccur = rNode->count;
 					
 					//weight = ((double)rTerm_cooccur/(double)key_count)*2+((double)rTerm_cooccur/(double)rTerm_count);			
-					weight = ((double)rTerm_cooccur/(double)key_count)+((double)rTerm_count/(double)key_count)*rTerm_cooccur;					
+					//weight = ((double)rTerm_cooccur/(double)key_count)+((double)rTerm_count/(double)key_count)*rTerm_cooccur;					
+					//weight = ((double)rTerm_cooccur/(double)rTerm_count)*((double)rTerm_cooccur/(double)key_count);
 					
+					//TFIDF
+					weight = ((double)rTerm_cooccur/(double)key_count)*log((double)totalTermCount/(double)rTerm_count);
 					rNode->weight = weight;
 
 					relatedListAry[i]=rNode;
@@ -312,7 +319,7 @@ int compare (const void * a, const void * b)
 
 void hashtable_generateResult(node** nodelist, long slotsize, FILE* wfp_result, FILE* wfp_index){
 
-	int row;
+	int row, counter;
 	node * temp;
 	relatedNode * rNode;
 	long record_start,recordSize;
@@ -327,24 +334,29 @@ void hashtable_generateResult(node** nodelist, long slotsize, FILE* wfp_result, 
 			record_start=ftell(wfp_result);
 				
 
-				fprintf(wfp_result,"@\n");
-				fwprintf(wfp_result,L"@key:%ls\n@kcount:%ld\n@rOcount:%ld\n",temp->key,temp->count,temp->rTermOCount);
+				//fprintf(wfp_result,"@\n");
+				//fwprintf(wfp_result,L"@key:%ls\n@kcount:%ld\n@rOcount:%ld\n",temp->key,temp->count,temp->rTermOCount);
 				
-				fprintf(wfp_result,"@relate:\n");
+				//fprintf(wfp_result,"@relate:\n");
 				rNode=temp->relatedList;
 
-				
+				counter=0;
 				while(rNode!=NULL){
 					
-					fwprintf(wfp_result,L"%ls\t%f\n",rNode->term,rNode->weight);
+					fwprintf(wfp_result,L"%ls\t%ls\t%f\n",temp->key,rNode->term,rNode->weight);
+
+	//				fwprintf(wfp_result,L"%ls\t%f\n",rNode->term,rNode->weight);
 
 					//fwprintf(wfp_result,L"%ls\t%ld\t%ld\t%ld\n",rNode->term,key_count, rTerm_count, rTerm_cooccur);
 					rNode = rNode->next;
-				}
+					
+					if(counter++>=19)
+						break;
+				} 
 
 				//output index
-				recordSize= ftell(wfp_result)-record_start;
-				fwprintf(wfp_index, L"%ls\t%ld\t%ld\n",temp->key, record_start, recordSize);
+				//recordSize= ftell(wfp_result)-record_start;
+				//fwprintf(wfp_index, L"%ls\t%ld\t%ld\n",temp->key, record_start, recordSize);
 				
 				temp = temp->next;
 			}

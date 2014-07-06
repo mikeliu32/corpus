@@ -13,7 +13,7 @@
 
 #include "news.h"
 
-#define HASHTABLE_SLOTSIZE 500000
+#define HASHTABLE_SLOTSIZE 1000000
 #define bytesPerMB 1048576
 #define SLIDING_WINDOW_SIZE 10
 
@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
 		exit(1);
 
 	FILE *wfp;
-	wfp=fopen("relatedCorpus","w");
+	wfp=fopen("coCurrenceCorpus","w");
 
 	if(wfp==NULL)
 		exit(1);
@@ -288,13 +288,13 @@ keywordnode** getKeywordList(char * startFlag){
 		}
 
 	}
-
+/*
 	for(i=0;i<keywordCount;i++){
 		
 		wprintf(L"%ls\t",keywordlist[i]->keyword);
 	}
 	printf("\n");
-
+*/
 	return keywordlist;
 }
 
@@ -353,13 +353,13 @@ void coSlidingWindow(int* wordmap, keywordnode** keywordlist, FILE * wfp){
 
 		if(wordmap[i]==-1)
 			continue;
-		
+		 
 		mainCorpusId=wordmap[i];
 
 		for(j=i;j<i+SLIDING_WINDOW_SIZE && j<wordmapCount;j++){
 	
 			if(wordmap[j]!=-1 && wordmap[j]!=mainCorpusId){
-				wprintf(L"%ls\t%ls\n",keywordlist[mainCorpusId]->keyword, keywordlist[wordmap[j]]->keyword);
+			//	wprintf(L"%ls\t%ls\n",keywordlist[mainCorpusId]->keyword, keywordlist[wordmap[j]]->keyword);
 				
 				fwprintf(wfp, L"%ls\t%ls\n",keywordlist[mainCorpusId]->keyword, keywordlist[wordmap[j]]->keyword);
 			}
